@@ -12,12 +12,12 @@ float duration_us, distance_cm;
 
 // WIFI netwerk
 // Network on school  
-//const char* ssid      = "devbit-verhuis";
-//const char* password  = "Dr@@dloos!";
+const char* ssid      = "devbit-verhuis";
+const char* password  = "Dr@@dloos!";
 
 // Network home
-const char* ssid      = "WiFi-2.4-FA30";
-const char* password  = "wzsd7cyh5e76a";
+//const char* ssid      = "WiFi-2.4-FA30";
+//const char* password  = "wzsd7cyh5e76a";
 
 
 
@@ -102,10 +102,12 @@ void loop() {
   // calculate the distance limit between 0 an 1 
   distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
   
-  if(distance_cm > 1) {
-      distance_cm = 1;
-  }
-
+     if (distance_cm < 1) {
+      client.publish(sensor_topic, String(distance_cm).c_str());
+      Serial.println("distance sent!");
+    }else {
+        Serial.println("Value above 1!");
+      }
 
   
   // For testing from home 

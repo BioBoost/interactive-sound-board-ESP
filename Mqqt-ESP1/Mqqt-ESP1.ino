@@ -101,18 +101,29 @@ void loop() {
    
   // calculate the distance limit between 0 an 1 
   distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
+ 
+
+    if (distance_cm < 1) {
+      client.publish(sensor_topic, String(distance_cm).c_str());
+      Serial.println("distance sent!");
+    }else {
+        Serial.println("Value above 1!");
+      }
   
-  if(distance_cm > 1) {
-      distance_cm = 1;
-  }
+  
+    
+ 
  
     
   // We publich the data to the topic
-  if (client.publish(sensor_topic, String(distance_cm).c_str())) {
-      
+ 
 
-    Serial.println("distance sent!");
-  }
+
+
+
+
+
+  
   // Again, client.publish will return a boolean value depending on whether it succeded or not.
   // If the message failed to send, we will try again, as the connection may have broken.
 
