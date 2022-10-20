@@ -1,9 +1,19 @@
 
 #include <WiFi.h>
 #include "PubSubClient.h" // Connect and publish to the MQTT broker
+#include "Freenove_WS2812_Lib_for_ESP32.h"
+
 
 #define TRIG_PIN 0 // ESP32 pin GIOP23 connected to Ultrasonic Sensor's TRIG pin
 #define ECHO_PIN 1 // ESP32 pin GIOP22 connected to Ultrasonic Sensor's ECHO pin
+
+#define LEDS_COUNT  1
+#define LEDS_PIN  8
+#define CHANNEL   0
+
+// LED
+u8 m_color[5][3] = { {255, 0, 0}, {0, 255, 0}, {0, 0, 255}, {255, 255, 255}, {0, 0, 0} };
+Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
 // Code ESP1
 
@@ -20,12 +30,7 @@ const char* password  = "Dr@@dloos!";
 //const char* ssid      = "WiFi-2.4-FA30";
 //const char* password  = "wzsd7cyh5e76a";
 
-// laptop hotspot
-//const char* ssid      = "Malware";
-//const char* password  = "12345678";
 
-//const char* ssid      = "telenet-3377811";
-//const char* password  = "fde8jtxakRjj";
 
 // MQTT 
 const char* mqtt_server = "mqtt.devbit.be";  // Broker we connect to 
@@ -42,6 +47,9 @@ WiFiClient wifiClient;
 // 1883 is the listener port for the Broker
 
 PubSubClient client(mqtt_server, 1883, wifiClient); 
+
+
+
 
 void connect_MQTT(){
   Serial.print("Connecting to ");
@@ -67,15 +75,24 @@ void connect_MQTT(){
   */
   if (client.connect(clientID, mqtt_username, mqtt_password)) {
     Serial.println("Connected to MQTT Broker!");
+    strip.setLedColorData(0, m_color[1][0], m_color[1][1], m_color[1][2]);
+    strip.show();
+    
   }
   else {
     Serial.println("Connection to MQTT Broker failed...");
+    strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
+    strip.show();
   }
 }
 
 
 
 void setup() {
+  strip.begin();
+  strip.setBrightness(10);
+  strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
+  strip.show();
   // begin serial port
   Serial.begin (9600);
   // configure the trigger pin to output mode
@@ -95,45 +112,30 @@ void loop() {
   // measure duration of pulse from ECHO pin
   duration_us = pulseIn(ECHO_PIN, HIGH);
 
-   // To test home without using the sensor 
-
-
    
+  // calculate the distance
   // calculate the distance limit between 0 an 1 
   distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
- 
+  
+    
+  float distance_save; 
+  float * ptr_distance_save;
 
+  //save value
     if (distance_cm < 1) {
+      
       client.publish(sensor_topic, String(distance_cm).c_str());
+      ptr_distance_save = &distance_cm;
       Serial.println("distance sent!");
-    }else {
-        Serial.println("Value above 1!");
+      
+    }
+    else{
+      client.publish(sensor_topic, String(1).c_str());
       }
-  
-  
-    
- 
- 
-    
-  // We publich the data to the topic
- 
-
-
-
-
-
-
-  
-  // Again, client.publish will return a boolean value depending on whether it succeded or not.
-  // If the message failed to send, we will try again, as the connection may have broken.
-
 
 
   // print the value to Serial Monitor
   Serial.print("distance: ");
-
-
- 
-  Serial.print(distance_cm);
+  Serial.print(distance_cm * 0.01);
 
 }
