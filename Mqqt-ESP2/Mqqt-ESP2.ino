@@ -1,4 +1,4 @@
-include <WiFi.h>
+#include <WiFi.h>
 #include "PubSubClient.h" // Connect and publish to the MQTT broker
 
 #define TRIG_PIN 0 // ESP32 pin GIOP23 connected to Ultrasonic Sensor's TRIG pin
@@ -16,8 +16,11 @@ float duration_us, distance_cm;
 //const char* password  = "Dr@@dloos!";
 
 // Network home
-const char* ssid      = "WiFi-2.4-FA30";
-const char* password  = "wzsd7cyh5e76a";
+//const char* ssid      = "WiFi-2.4-FA30";
+//const char* password  = "wzsd7cyh5e76a";
+
+const char* ssid      = "telenet-3377811";
+const char* password  = "fde8jtxakRjj";
 
 
 
@@ -99,11 +102,19 @@ void loop() {
 
    
   // calculate the distance
-  //distance_cm = 0.017 * duration_us;
+ 
+   
+  // calculate the distance limit between 0 an 1 
+  distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
+  
+  if(distance_cm > 1) {
+      distance_cm = 1;
+  }
 
   
   // For testing from home 
-  distance_cm = 10 +rand()%100;
+   distance_cm = (1 + rand()%10) * 0.1;
+  
   // We publich the data to the topic
   if (client.publish(sensor_topic, String(distance_cm).c_str())) {
     Serial.println("distance sent!");

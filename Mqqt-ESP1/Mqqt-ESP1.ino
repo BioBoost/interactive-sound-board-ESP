@@ -13,14 +13,19 @@ float duration_us, distance_cm;
 
 // WIFI netwerk
 // Network on school  
-//const char* ssid      = "devbit-verhuis";
-//const char* password  = "Dr@@dloos!";
+const char* ssid      = "devbit-verhuis";
+const char* password  = "Dr@@dloos!";
 
 // Network home
-const char* ssid      = "WiFi-2.4-FA30";
-const char* password  = "wzsd7cyh5e76a";
+//const char* ssid      = "WiFi-2.4-FA30";
+//const char* password  = "wzsd7cyh5e76a";
 
+// laptop hotspot
+//const char* ssid      = "Malware";
+//const char* password  = "12345678";
 
+//const char* ssid      = "telenet-3377811";
+//const char* password  = "fde8jtxakRjj";
 
 // MQTT 
 const char* mqtt_server = "mqtt.devbit.be";  // Broker we connect to 
@@ -37,9 +42,6 @@ WiFiClient wifiClient;
 // 1883 is the listener port for the Broker
 
 PubSubClient client(mqtt_server, 1883, wifiClient); 
-
-
-
 
 void connect_MQTT(){
   Serial.print("Connecting to ");
@@ -94,19 +96,21 @@ void loop() {
   duration_us = pulseIn(ECHO_PIN, HIGH);
 
    // To test home without using the sensor 
-   float max = 100; 
-   float min = 100;
-   random(max, min);
+
 
    
-  // calculate the distance
-  //distance_cm = 0.017 * duration_us;
-
+  // calculate the distance limit between 0 an 1 
+  distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
   
-  // For testing from home 
-  distance_cm = 100 +rand()%200;
+  if(distance_cm > 1) {
+      distance_cm = 1;
+  }
+ 
+    
   // We publich the data to the topic
   if (client.publish(sensor_topic, String(distance_cm).c_str())) {
+      
+
     Serial.println("distance sent!");
   }
   // Again, client.publish will return a boolean value depending on whether it succeded or not.

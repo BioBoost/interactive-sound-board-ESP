@@ -99,7 +99,13 @@ void loop() {
 
    
   // calculate the distance
-  //distance_cm = 0.017 * duration_us;
+  // calculate the distance limit between 0 an 1 
+  distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
+  
+  if(distance_cm > 1) {
+      distance_cm = 1;
+  }
+
 
   
   // For testing from home 
@@ -118,6 +124,6 @@ void loop() {
 
 
  
-  Serial.print(distance_cm);
+  Serial.print(distance_cm * 0.01);
 
 }
