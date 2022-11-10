@@ -1,4 +1,3 @@
-
 #include <WiFi.h>
 #include "PubSubClient.h" // Connect and publish to the MQTT broker
 #include "Freenove_WS2812_Lib_for_ESP32.h"
@@ -136,6 +135,7 @@ void loop() {
 
   // print the value to Serial Monitor
   Serial.print("distance: ");
-  Serial.print(distance_cm * 0.01);
+  Serial.print(distance_cm);
+  delay(200);
 
 }
