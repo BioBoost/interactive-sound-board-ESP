@@ -74,7 +74,7 @@ void connect_MQTT(){
   */
   if (client.connect(clientID, mqtt_username, mqtt_password)) {
     Serial.println("Connected to MQTT Broker!");
-    strip.setLedColorData(0, m_color[1][0], m_color[1][1], m_color[1][2]);
+    strip.setLedColorData(0, m_color[2][0], m_color[2][1], m_color[2][2]);
     strip.show();
     
   }
@@ -136,6 +136,6 @@ void loop() {
   // print the value to Serial Monitor
   Serial.print("distance: ");
   Serial.print(distance_cm);
-  delay(200);
+  delay(100);
 
 }
