@@ -1,4 +1,4 @@
 esp1 = led groen       
 esp2 = led blauw       
 esp3 = led wit         
-esp4 = led zwart (nog aanpassen)            
+esp4 = led geel          
