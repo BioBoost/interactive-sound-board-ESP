@@ -29,14 +29,18 @@ const char* password  = "Dr@@dloos!";
 //const char* ssid      = "WiFi-2.4-FA30";
 //const char* password  = "wzsd7cyh5e76a";
 
-
-
 // MQTT 
 const char* mqtt_server = "mqtt.devbit.be";  // Broker we connect to 
-const char* sensor_topic = "test/soundboard/esp1"; // Topic we send to
-const char* mqtt_username = "test_esp1"; // MQTT username
-const char* mqtt_password = "test_esp1"; // MQTT password
-const char* clientID = "client_soundboard_esp1"; // MQTT client ID
+const char * devices_topic = "test/devices/";
+
+
+
+// We add Mac user 
+
+const char* mqtt_username = WiFi.macAddress().c_str(); // MQTT username
+const char* mqtt_password = WiFi.macAddress().c_str(); // MQTT password
+
+const char* clientID = WiFi.macAddress().c_str(); // MQTT client ID
 
 
 // Initialise the WiFi and MQTT Client objects
@@ -46,7 +50,6 @@ WiFiClient wifiClient;
 // 1883 is the listener port for the Broker
 
 PubSubClient client(mqtt_server, 1883, wifiClient); 
-
 
 
 
@@ -85,7 +88,7 @@ void connect_MQTT(){
   }
 }
 
-
+ 
 
 void setup() {
   strip.begin();
@@ -98,11 +101,68 @@ void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   // configure the echo pin to input mode
   pinMode(ECHO_PIN, INPUT);
-
   connect_MQTT();
+
+  
+  // Status and mac 
+  const char * mac = WiFi.macAddress().c_str();
+  client.publish(devices_topic, mac);
+  client.setCallback(callback);
+  
+  
 }
 
+
+// ********* callback 
+void callback(char* topic, byte* message, unsigned int length) {
+
+  client.subscribe("test/status");
+  
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  String messageTemp;
+  
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)message[i]);
+    messageTemp += (char)message[i];
+  }
+  Serial.println();
+  Serial.print("callback");
+
+  // Feel free to add more if statements to control more GPIOs with MQTT
+
+  // If a message is received on the topic esp32/output, you check if the message is either "on" or "off". 
+  // Changes the output state according to the message
+  if (String(topic) == "test/status") {
+    Serial.print("Changing output to ");
+    if(messageTemp == "1"){
+      Serial.println("1");
+
+    }
+    else if(messageTemp == "0"){
+      Serial.println("0");
+  
+    }
+  }
+}
+
+
 void loop() {
+
+// Attributes 
+
+  const char * value_topic = "test/esp_/sensor";
+  String value_s(value_topic);
+  String samen = String(value_s + WiFi.macAddress() + "/");
+  
+  // Char convert from string 
+  const char * sensor_topic = samen.c_str();
+
+
+  //*************************** 
+  const char * devices_status_topic = "test/status/";
+
   // generate 10-microsecond pulse to TRIG pin
   digitalWrite(TRIG_PIN, HIGH);
   delayMicroseconds(10);
@@ -124,18 +184,20 @@ void loop() {
     if (distance_cm < 1) {
       
       client.publish(sensor_topic, String(distance_cm).c_str());
+    
       ptr_distance_save = &distance_cm;
-      Serial.println("distance sent!");
+      //Serial.println("distance sent!");
       
     }
     else{
       client.publish(sensor_topic, String(1).c_str());
       }
 
-
+  // terug aanpassen later 
   // print the value to Serial Monitor
-  Serial.print("distance: ");
-  Serial.print(distance_cm);
-  delay(100);
+   // Serial.print("distance: ");
+  //Serial.print(distance_cm);
+  //Serial.print(samen);
+
 
 }
