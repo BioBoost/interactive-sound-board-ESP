@@ -54,3 +54,24 @@ Inside **void Setup** we publish ur value to the socket. We convert the float in
 We have tree modules and every module publish a value to an topic.
 
 ![alt text](./img/Basic-mqtt.png "label")
+
+### Publisch links
+
+We have 2 subscribe functions one status and other one sensor values.
+
+We get all the values of the availabel devices under this link.
+
+"test/devices/"
+"test/devices/58:CF:79:E3:62:70"
+"test/devices/58:CF:80:E3:62:70"
+...
+
+for example: When we publisch to test/58:CF:79:E3:7F:A4/status
+
+if an 1 or a 0 is send, we control when we start reading the sensor values.
+
+### Mqtt subcribe links
+
+We can start reading the values when we subcribe to the mac addres
+
+58:CF:79:E3:62:70/sensor
