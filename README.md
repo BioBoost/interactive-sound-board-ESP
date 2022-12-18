@@ -20,8 +20,8 @@ Than we chose ur board: In tools/board/esp32
 The needed ssid and password to connect to access point
 
 ```CPP
-const char* ssid      = "devbit-verhuis";
-const char* password  = "Dr@@dloos!";
+const char* ssid      = "<WIFI-ssid>";
+const char* password  = "<password>";
 ```
 
 We connect to the broker mqtt.devbit.be, we publisch to

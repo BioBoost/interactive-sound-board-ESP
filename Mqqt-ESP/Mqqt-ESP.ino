@@ -13,6 +13,9 @@
 u8 m_color[5][3] = { {255, 0, 0}, {0, 255, 0}, {0, 0, 255}, {255, 255, 255}, {0, 0, 0} };
 Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
+//globale string variable ! niet aanpassen.
+String globalClientID;
+
 // SENSOR
 float duration_us, distance_cm;
 
@@ -40,6 +43,29 @@ WiFiClient wifiClient;
 // 1883 is the listener port for the Broker
 PubSubClient client(mqtt_server, 1883, wifiClient); 
 
+// Attributes 
+const char * value_topic = "test/";
+String value_s(value_topic);
+String samen = String(value_s + WiFi.macAddress() + "/sensor");
+  
+// Char convert from string 
+const char * sensor_topic = samen.c_str();
+  
+//*************************** 
+const char * devices_status_topic = "test/status/";
+  
+float distance_save; 
+float * ptr_distance_save;
+
+// Need to listen to the status of this ESP (mac)
+// test/mac/sensor
+const char * status_ = "test/";
+String status_s(status_);
+String samen_ = String(status_s + WiFi.macAddress() + "/status");
+  
+// Char convert from string 
+const char * sensor_topic_status = samen_.c_str();
+
 void connect_MQTT(){
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -62,6 +88,7 @@ void connect_MQTT(){
   }
   */
   String clientID = WiFi.macAddress().substring(15) + "_esp_sound_" + String(random(1000,9999));
+  globalClientID = clientID;
   if (client.connect(clientID.c_str())) {
     Serial.println("Connected to MQTT Broker!");
     Serial.println(clientID);
@@ -101,27 +128,43 @@ void callback(char *topic, byte *payload, unsigned int length) {
  Serial.println("-----------------------");
 }
 
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (client.connect(globalClientID.c_str())) {
+      Serial.println("connected");
+      // Subscribe
+      client.subscribe(sensor_topic_status);
+      Serial.println(sensor_topic_status);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
 
 void connections(){
   if(WiFi.status() != WL_CONNECTED){
     strip.setBrightness(0);
     strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][0]);
-    Serial.println("connection lost");
+    Serial.println("connection lost to WIFI");
+  }
+  else if (!client.connected()) {
+    strip.setBrightness(10);
+    strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
+    reconnect();
   }
   else{
     strip.setLedColorData(0, m_color[1][0], m_color[1][1], m_color[1][2]);
   }
   strip.show();
 }
-
-// Need to listen to the status of this ESP (mac)
-// test/mac/sensor
-const char * status_ = "test/";
-String status_s(status_);
-String samen_ = String(status_s + WiFi.macAddress() + "/status");
-  
-// Char convert from string 
-const char * sensor_topic_status = samen_.c_str();
 
 void setup() {
   strip.begin();
@@ -146,49 +189,9 @@ void setup() {
   //Serial.println(clientID);
 }
 
-/*void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    if (client.connect(clientID, mqtt_username, mqtt_password)) {
-      Serial.println("connected");
-      // Subscribe
-      client.subscribe(sensor_topic_status);
-      Serial.println(sensor_topic_status);
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-  }
-}
-*/
-
 void loop() {
-  // Attributes 
-  const char * value_topic = "test/";
-  String value_s(value_topic);
-  String samen = String(value_s + WiFi.macAddress() + "/sensor");
-  
-  // Char convert from string 
-  const char * sensor_topic = samen.c_str();
-  
-  //*************************** 
-  const char * devices_status_topic = "test/status/";
-  
-  float distance_save; 
-  float * ptr_distance_save;
-
-  if (!client.connected()) {
-    strip.setBrightness(10);
-    strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
-    //reconnect();
-    strip.show();
-  }
-  //connections();
+  //checks connections to mqtt broker and WIFI
+  connections();
   // generate 10-microsecond pulse to TRIG pin
   digitalWrite(TRIG_PIN, HIGH);
   delayMicroseconds(10);
