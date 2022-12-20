@@ -10,7 +10,6 @@
 #define CHANNEL   0
 
 // LED
-u8 m_color[5][3] = { {255, 0, 0}, {0, 255, 0}, {0, 0, 255}, {255, 255, 255}, {0, 0, 0} };
 Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
 //globale string variable ! niet aanpassen.
@@ -21,21 +20,15 @@ float duration_us, distance_cm;
 
 // WIFI netwerk
 // Network on school  
-const char* ssid      = "devbit-verhuis";
-const char* password  = "Dr@@dloos!";
+const char* ssid      = "SoundBoardAP";
+const char* password  = "123456789PiPi";
 
 // MQTT 
-const char* mqtt_server = "172.16.240.44";  // Broker we connect to s
+const char* mqtt_server = "192.168.4.18";  // Broker we connect to s
 const char * devices_topic = "test/devices/";
 
 // Status 0 or 1
 bool Status = false;
-
-// We add Mac user 
-//const char* mqtt_username = WiFi.macAddress().c_str(); // MQTT username
-//const char* mqtt_password = WiFi.macAddress().c_str(); // MQTT password
-String tempclient = WiFi.macAddress();
-//const char* clientID = "espusb";//WiFi.macAddress().c_str(); // MQTT client ID
 
 // Initialise the WiFi and MQTT Client objects
 WiFiClient wifiClient;
@@ -79,26 +72,19 @@ void connect_MQTT(){
     delay(1000);
     Serial.print(".");
   }
-  // Connect to MQTT Broker
-  // client.connect returns a boolean value to let us know if the connection was successful.
-  // If the connection is failing, make sure you are using the correct MQTT Username and Password (Setup Earlier in the Instructable)
-  /*
-  if (client.connect(clientID, mqtt_username, mqtt_password)) {
-    Serial.println("Connected to MQTT Broker!");
-  }
-  */
+  
   String clientID = WiFi.macAddress().substring(15) + "_esp_sound_" + String(random(1000,9999));
   globalClientID = clientID;
   if (client.connect(clientID.c_str())) {
     Serial.println("Connected to MQTT Broker!");
     Serial.println(clientID);
-    strip.setLedColorData(0, m_color[1][0], m_color[1][1], m_color[1][2]);
+    strip.setLedColorData(0, 255, 0, 0);
     strip.show();
     
   }
   else {
     Serial.println("Connection to MQTT Broker failed...");
-    strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
+    strip.setLedColorData(0,0, 0, 255);
     strip.show();
   }
 }
@@ -131,8 +117,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    Serial.print("Attempting MQTT connection... ");
     // Attempt to connect
+    Serial.println(globalClientID.c_str());
     if (client.connect(globalClientID.c_str())) {
       Serial.println("connected");
       // Subscribe
@@ -152,16 +139,16 @@ void reconnect() {
 void connections(){
   if(WiFi.status() != WL_CONNECTED){
     strip.setBrightness(0);
-    strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][0]);
+    strip.setLedColorData(0, 255, 0, 0);
     Serial.println("connection lost to WIFI");
   }
-  else if (!client.connected()) {
+  if (!client.connected()) {
     strip.setBrightness(10);
-    strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
+    strip.setLedColorData(0, 0, 0, 255);
     reconnect();
   }
   else{
-    strip.setLedColorData(0, m_color[1][0], m_color[1][1], m_color[1][2]);
+    strip.setLedColorData(0, 0, 255, 0);
   }
   strip.show();
 }
@@ -169,7 +156,7 @@ void connections(){
 void setup() {
   strip.begin();
   strip.setBrightness(10);
-  strip.setLedColorData(0, m_color[0][0], m_color[0][1], m_color[0][2]);
+  strip.setLedColorData(0,255,0,0);
   strip.show();
   // begin serial port
   Serial.begin (9600);
@@ -209,21 +196,13 @@ void loop() {
       if (distance_cm < 1) {
         client.publish(sensor_topic, String(distance_cm).c_str());
         ptr_distance_save = &distance_cm;
-        Serial.println(sensor_topic);
+        //Serial.println(sensor_topic);
       }
       else{
         client.publish(sensor_topic, String(1).c_str());
-        Serial.println(sensor_topic);
+        //Serial.println(sensor_topic);
       }
    }
 
-  // terug aanpassen later 
-  // print the value to Serial Monitor
-   // Serial.print("distance: ");
-  //Serial.print(distance_cm);
-  //Serial.print(samen);
-Serial.println(tempclient);
-//Added for subcribing
 client.loop();
-Serial.println("client loop");
 }
