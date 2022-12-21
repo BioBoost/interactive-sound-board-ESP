@@ -1,22 +1,21 @@
 #include <WiFi.h>
-#include "PubSubClient.h" // Connect and publish to the MQTT broker
+#include "PubSubClient.h" 
 #include "Freenove_WS2812_Lib_for_ESP32.h"
 
-#define TRIG_PIN 0 // ESP32 pin GIOP23 connected to Ultrasonic Sensor's TRIG pin
-#define ECHO_PIN 1 // ESP32 pin GIOP22 connected to Ultrasonic Sensor's ECHO pin
 
 #define LEDS_COUNT  1
 #define LEDS_PIN  8
 #define CHANNEL   0
 
-// LED
+// RGB LED lib
 Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
-//globale string variable ! niet aanpassen.
-String globalClientID;
-
+#define TRIG_PIN 0 // ESP32 pin GIOP23 connected to Ultrasonic Sensor's TRIG pin
+#define ECHO_PIN 1 // ESP32 pin GIOP22 connected to Ultrasonic Sensor's ECHO pin
 // SENSOR
 float duration_us, distance_cm;
+float distance_save; 
+float * ptr_distance_save;
 
 // WIFI netwerk
 // Network on school  
@@ -27,15 +26,16 @@ const char* password  = "123456789PiPi";
 const char* mqtt_server = "192.168.4.18";  // Broker we connect to s
 const char * devices_topic = "test/devices/";
 
-// Status 0 or 1
-bool Status = false;
-
 // Initialise the WiFi and MQTT Client objects
 WiFiClient wifiClient;
 
 // 1883 is the listener port for the Broker
 PubSubClient client(mqtt_server, 1883, wifiClient); 
 
+//globale string variable ! niet aanpassen.
+String globalClientID;
+// Status 0 or 1
+bool Status = false;
 // Attributes 
 const char * value_topic = "test/";
 String value_s(value_topic);
@@ -46,9 +46,6 @@ const char * sensor_topic = samen.c_str();
   
 //*************************** 
 const char * devices_status_topic = "test/status/";
-  
-float distance_save; 
-float * ptr_distance_save;
 
 // Need to listen to the status of this ESP (mac)
 // test/mac/sensor
@@ -59,7 +56,7 @@ String samen_ = String(status_s + WiFi.macAddress() + "/status");
 // Char convert from string 
 const char * sensor_topic_status = samen_.c_str();
 
-void connect_MQTT(){
+void connect_WIFI_MQTT(){
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
@@ -114,7 +111,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
  Serial.println("-----------------------");
 }
 
-void reconnect() {
+void reconnect_MQTT() {
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection... ");
@@ -135,17 +132,29 @@ void reconnect() {
   }
 }
 
+void reconnect_WIFI(){
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  // Wait until the connection has been confirmed before continuing
+  while (WiFi.status() != WL_CONNECTED) {
+    // to test 1s , otherwise 500ms
+    delay(1000);
+    Serial.print(".");
+  }
+}
 
 void connections(){
   if(WiFi.status() != WL_CONNECTED){
     strip.setBrightness(0);
     strip.setLedColorData(0, 255, 0, 0);
     Serial.println("connection lost to WIFI");
+    reconnect_WIFI();
   }
   if (!client.connected()) {
     strip.setBrightness(10);
     strip.setLedColorData(0, 0, 0, 255);
-    reconnect();
+    reconnect_MQTT();
   }
   else{
     strip.setLedColorData(0, 0, 255, 0);
@@ -164,7 +173,7 @@ void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   // configure the echo pin to input mode
   pinMode(ECHO_PIN, INPUT);
-  connect_MQTT();
+  connect_WIFI_MQTT();
   client.setCallback(callback);
   // Status and mac 
   const char * mac = WiFi.macAddress().c_str();
@@ -179,20 +188,20 @@ void setup() {
 void loop() {
   //checks connections to mqtt broker and WIFI
   connections();
-  // generate 10-microsecond pulse to TRIG pin
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-
-  // measure duration of pulse from ECHO pin
-  duration_us = pulseIn(ECHO_PIN, HIGH);
-   
-  // calculate the distance
-  // calculate the distance limit between 0 an 1 
-  distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
-  
  // IF STATUS is true we start sending
   if(Status == true){
+        // generate 10-microsecond pulse to TRIG pin
+      digitalWrite(TRIG_PIN, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG_PIN, LOW);
+    
+      // measure duration of pulse from ECHO pin
+      duration_us = pulseIn(ECHO_PIN, HIGH);
+       
+      // calculate the distance
+      // calculate the distance limit between 0 an 1 
+      distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
+      
       if (distance_cm < 1) {
         client.publish(sensor_topic, String(distance_cm).c_str());
         ptr_distance_save = &distance_cm;

@@ -2,6 +2,9 @@
 Arduino code of all the ESP.
 We are using the model: ESP32-C3-DevKitM-1
 
+## importent note
+This was all programmed on the Arduino IDE version 1.
+
 ## Execute
 Require to install needed libraries:
 Installing ESP32 Add-on in Arduino IDE
@@ -11,67 +14,307 @@ https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32
 
 Then in board manager we can type: ESP32
 We install the ESP32 by Espressif Systems
-Than we chose ur board: In tools/board/esp32
+Than we chose ur board: In tools/board/esp32c3
 
-## Important parts of the code
+## code 
 
-### We take as example the Code of EXP1:
+include alle nodige libraries:
+- wifi 
+    om de esp te kunnen verbinden met wifi netwerken
+- PubSubClient
+    om te kunnen communiceren via MQTT
+- Freenove WS2812
+    de RGB led op de ESP makelijker te kunnen gebruiken en aanpassen
 
-The needed ssid and password to connect to access point
+```cpp
+#include <WiFi.h>
+#include "PubSubClient.h" 
+#include "Freenove_WS2812_Lib_for_ESP32.h"
+```
 
-```CPP
-const char* ssid      = "<WIFI-ssid>";
+```cpp
+#define LEDS_COUNT  1
+#define LEDS_PIN  8
+#define CHANNEL   0
+
+// RGB LED lib
+Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
+```
+
+globale variabelen voor de Ultrasone sensor
+
+```cpp
+#define TRIG_PIN 0 // ESP32 pin GIOP23 connected to Ultrasonic Sensor's TRIG pin
+#define ECHO_PIN 1 // ESP32 pin GIOP22 connected to Ultrasonic Sensor's ECHO pin
+// SENSOR
+float duration_us, distance_cm;
+float distance_save; 
+float * ptr_distance_save;
+```
+
+Aanmaken van de variable om de esp te verbinden met WIFI.
+
+```cpp
+// WIFI netwerk  
+const char* ssid      = "<wifi name>";
 const char* password  = "<password>";
 ```
 
-We connect to the broker mqtt.devbit.be, we publisch to
-test/soundboard/esp1. We declare an client ID soo the socket knows what unical client it is.
+Aanmaken van de variable om de esp te verbinden met MQTT.
 
-```CPP
-const char* mqtt_server = "mqtt.devbit.be";
-const char* sensor_topic = "test/soundboard/esp1"; 
-const char* mqtt_username = "test_esp1"; 
-const char* mqtt_password = "test_esp1"; 
-const char* clientID = "client_soundboard_esp1"; 
+```cpp
+// MQTT 
+const char* mqtt_server = "<ip/hostname of MQTT broker>";  // Broker we connect to s
+const char * devices_topic = "test/devices/";
 ```
 
-```CPP
-const char* mqtt_server = "mqtt.devbit.be";
-const char* sensor_topic = "test/soundboard/esp1"; 
-const char* mqtt_username = "test_esp1"; 
-const char* mqtt_password = "test_esp1"; 
-const char* clientID = "client_soundboard_esp1"; 
+Initialisatie van de Wifi en mqtt libraries. 
+De esp verbind de mqtt broker via poort 1883.
+
+```cpp
+// Initialise the WiFi and MQTT Client objects
+WiFiClient wifiClient;
+// 1883 is the listener port for the Broker
+PubSubClient client(mqtt_server, 1883, wifiClient); 
 ```
 
-Inside **void Setup** we publish ur value to the socket. We convert the float in a type string.
+Aanmaken van variabelen
+- globalClientID: om het unieke clientID later in op te slaan.
+- Status: sensor aan of uit
+- sensor_topic: topic om waar het mac address wordt in verwerkt om later de sensor waren naar door te sturen
+- sensor_topic_status: topic om mac address naar te publishen.
 
-```CPP
- if (client.publish(sensor_topic, String(distance_cm).c_str())) {
-    Serial.println("distance sent!");
+```cpp
+//globale string variable ! niet aanpassen.
+String globalClientID;
+// Status 0 or 1
+bool Status = false;
+// Attributes 
+const char * value_topic = "test/";
+String value_s(value_topic);
+String samen = String(value_s + WiFi.macAddress() + "/sensor");
+  
+// Char convert from string 
+const char * sensor_topic = samen.c_str();
+  
+//*************************** 
+const char * devices_status_topic = "test/status/";
+
+// Need to listen to the status of this ESP (mac)
+// test/mac/sensor
+const char * status_ = "test/";
+String status_s(status_);
+String samen_ = String(status_s + WiFi.macAddress() + "/status");
+  
+// Char convert from string 
+const char * sensor_topic_status = samen_.c_str();
+```
+
+connect_WIFI_MQTT functie verbindt de esp met de wifi en daarna met de MQTT broker.
+In deze functie wordt ook een unieke clientID genereerd voor de MQTT broker en opgeslagen 
+en in globale variable om later nog te gebruiken.
+
+```cpp
+void connect_WIFI_MQTT(){
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  // Connect to the WiFi
+  WiFi.begin(ssid, password);
+
+  // Wait until the connection has been confirmed before continuing
+  while (WiFi.status() != WL_CONNECTED) {
+    // to test 1s , otherwise 500ms
+    delay(1000);
+    Serial.print(".");
   }
+  
+  String clientID = WiFi.macAddress().substring(15) + "_esp_sound_" + String(random(1000,9999));
+  globalClientID = clientID;
+  if (client.connect(clientID.c_str())) {
+    Serial.println("Connected to MQTT Broker!");
+    Serial.println(clientID);
+    strip.setLedColorData(0, 255, 0, 0);
+    strip.show();
+    
+  }
+  else {
+    Serial.println("Connection to MQTT Broker failed...");
+    strip.setLedColorData(0,0, 0, 255);
+    strip.show();
+  }
+}
 ```
 
-We have tree modules and every module publish a value to an topic.
+Callback is waar de Mqtt messages worden ontvangen en verwerkt.
+Deze kijkt of de binnen gekomen waarden een '1' ASCII 49 of een andere waarde is.
+dit zal de variabele status veranderen naar TRUE/FALSE.
 
-![alt text](./img/Basic-mqtt.png "label")
+```cpp
+// ********* callback 
+void callback(char *topic, byte *payload, unsigned int length) {
+ Serial.print("Message arrived in topic: ");
+ Serial.println(topic);
+ Serial.print("Message:");
+ for (int i = 0; i < length; i++) {
+     Serial.print((char) payload[i]);
+     String recv_payload = String(( char *) payload);
+    
+      if (payload[0] == 49) {
+    // the strings arequal
+           Status = true; 
+           Serial.print("recived one  ");
+           Serial.print(payload[0]);
+      }
+      else{
+      Status = false; 
+      Serial.print("recived zero  ");
+      Serial.print(payload[0]);
+      }
+ } 
+ Serial.println();
+ Serial.println("-----------------------");
+}
+```
 
-### Publisch links
+Functie die de connecties met de WIFI en MQTT controleren en als nodig proberen te herstellen.
+- Rood = WIFI verbinding verbroken.
+- BLAUW = MQTT verbinding verbroken.
+- GROEN = alle verbinding operationeel.
 
-We have 2 subscribe functions one status and other one sensor values.
+```cpp
+void connections(){
+  if(WiFi.status() != WL_CONNECTED){
+    strip.setBrightness(0);
+    strip.setLedColorData(0, 255, 0, 0);
+    Serial.println("connection lost to WIFI");
+    reconnect_WIFI();
+  }
+  if (!client.connected()) {
+    strip.setBrightness(10);
+    strip.setLedColorData(0, 0, 0, 255);
+    reconnect_MQTT();
+  }
+  else{
+    strip.setLedColorData(0, 0, 255, 0);
+  }
+  strip.show();
+}
+```
 
-We get all the values of the availabel devices under this link.
+reconnect functie voor de verbinding te herstellen met de MQTT broker.
+Deze functie heeft de globaleClientID nodig om de verbinding te herstellen.
+Als het reconnecten succesvol was her subscribed hij op de topics.
+In de tegengestelde scenario print het de state van de client uit en probeert hij na 5 seconden opnieuw.
 
-"test/devices/"
-"test/devices/58:CF:79:E3:62:70"
-"test/devices/58:CF:80:E3:62:70"
-...
+```cpp
+void reconnect_MQTT() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection... ");
+    // Attempt to connect
+    Serial.println(globalClientID.c_str());
+    if (client.connect(globalClientID.c_str())) {
+      Serial.println("connected");
+      // Subscribe
+      client.subscribe(sensor_topic_status);
+      Serial.println(sensor_topic_status);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+```
 
-for example: When we publisch to test/58:CF:79:E3:7F:A4/status
+Functie probeert de verbinding opnieuw op te stellen met de WIFI elke seconde.
 
-if an 1 or a 0 is send, we control when we start reading the sensor values.
+```cpp
+void reconnect_WIFI(){
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  // Wait until the connection has been confirmed before continuing
+  while (WiFi.status() != WL_CONNECTED) {
+    // to test 1s , otherwise 500ms
+    delay(1000);
+    Serial.print(".");
+  }
+}
+```
 
-### Mqtt subcribe links
+de setup functie wordt éénmalig uitgevoert als de esp opgestart wordt:
+- de led activeren , de brightness aanpassen en standaard op rood zetten.
+- zal seriele communicatie met een baudrate van 9600 initializeren
+- de pinnen van de Ultrasone sensor input en output definiëren
+- verbinding maken WIFI en MQTT broker
+- de MQTT loop aanmaken aan de hand van de callback functie
+- Zijn MAC address publishen naar test/devices
+- subscriben op test/{MAC}/status
 
-We can start reading the values when we subcribe to the mac addres
+```cpp
+void setup() {
+  strip.begin();
+  strip.setBrightness(10);
+  strip.setLedColorData(0,255,0,0);
+  strip.show();
+  // begin serial port
+  Serial.begin (9600);
+  // configure the trigger pin to output mode
+  pinMode(TRIG_PIN, OUTPUT);
+  // configure the echo pin to input mode
+  pinMode(ECHO_PIN, INPUT);
+  connect_WIFI_MQTT();
+  client.setCallback(callback);
+  // Status and mac 
+  const char * mac = WiFi.macAddress().c_str();
+  client.publish(devices_topic, mac);
+  //Callback for Subscribing 
+  
+  client.subscribe(sensor_topic_status);
+  Serial.println(sensor_topic_status);
+  //Serial.println(clientID);
+}
 
-58:CF:79:E3:62:70/sensor
+```
+
+The loop check eerst of the WIFI & MQTT nog in orde zijn.
+Daarna als de status true is zal hij waarden meten via de ultrasone en door sturen naar de sensor_topic.
+Deze blijft draaien tot dde esp wordt uitgetrokken of de code er langer overdoet dan 15 seconde om aan client.loop() te geraken.
+client.loop() moet elke keer aangeroepen worden of de esp wordt automatisch van de broker gedisconnect.
+
+```cpp
+void loop() {
+  //checks connections to mqtt broker and WIFI
+  connections();
+ // IF STATUS is true we start sending
+  if(Status == true){
+        // generate 10-microsecond pulse to TRIG pin
+      digitalWrite(TRIG_PIN, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG_PIN, LOW);
+    
+      // measure duration of pulse from ECHO pin
+      duration_us = pulseIn(ECHO_PIN, HIGH);
+       
+      // calculate the distance
+      // calculate the distance limit between 0 an 1 
+      distance_cm = (0.017 * duration_us) * 0.01; // Beperken tussen 0 en 1
+      
+      if (distance_cm < 1) {
+        client.publish(sensor_topic, String(distance_cm).c_str());
+        ptr_distance_save = &distance_cm;
+        //Serial.println(sensor_topic);
+      }
+      else{
+        client.publish(sensor_topic, String(1).c_str());
+        //Serial.println(sensor_topic);
+      }
+   }
+
+client.loop();
+}
+```
