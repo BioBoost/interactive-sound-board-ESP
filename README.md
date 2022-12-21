@@ -1,20 +1,39 @@
 # Interactive-sound-board-ESP
-Arduino code of all the ESP.
+Arduino code for the ESP.
 We are using the model: ESP32-C3-DevKitM-1
+
+made by:
+- [<img src="https://github.com/TristanDeLil.png" width="25">Tristan De Lil](https://github.com/TristanDeLil)
+- [<img src="https://github.com/r0755466.png" width="25">Rayan Azzi](https://github.com/r0755466)
 
 ## importent note
 This was all programmed on the Arduino IDE version 1.
 
-## Execute
-Require to install needed libraries:
-Installing ESP32 Add-on in Arduino IDE
+## Libraries
+
+Required libraries:
+- Installing ESP32 Add-on in Arduino IDE
+- PubSubClient for esp 32: [MQTT library link](https://github.com/plapointe6/EspMQTTClient)
+- Freenova WS2812: [RGB led link](https://github.com/Freenove/Freenove_WS2812_Lib_for_ESP32)
+- WIFI for arduino: [WIFI link](https://www.arduino.cc/reference/en/libraries/wifi/)
+
+### use esp32 with arduino IDEv1
 
 We need to add on preferances Additional Board Manager URLs:
-https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+File -> Preferences -> add url to Addittional Boards Manager URLs: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 
 Then in board manager we can type: ESP32
+tools -> board manager -> esp32
 We install the ESP32 by Espressif Systems
-Than we chose ur board: In tools/board/esp32c3
+
+Than we chose ur board: In tools -> board -> ESP32 arduino -> ESP32c3 Dev module
+
+### how to install
+
+Tools -> manage libraries -> search for the libraries
+
+or go to the folder libs copy them to Documents\Arduino\libraries and unzip them there.
 
 ## code 
 
