@@ -27,7 +27,7 @@ Then in board manager we can type: ESP32
 tools -> board manager -> esp32
 We install the ESP32 by Espressif Systems
 
-Than we chose ur board: In tools -> board -> ESP32 arduino -> ESP32c3 Dev module
+Than we chose ur board: In tools -> board -> ESP32 arduino -> ESP32c3 Dev module.
 
 ### how to install
 
@@ -39,11 +39,11 @@ or go to the folder libs copy them to Documents\Arduino\libraries and unzip them
 
 include alle nodige libraries:
 - wifi 
-    om de esp te kunnen verbinden met wifi netwerken
+    Om de esp te kunnen verbinden met wifi netwerken.
 - PubSubClient
-    om te kunnen communiceren via MQTT
+    Om te kunnen communiceren via MQTT.
 - Freenove WS2812
-    de RGB led op de ESP makelijker te kunnen gebruiken en aanpassen
+    De RGB led op de ESP makelijker te kunnen gebruiken en aanpassen.
 
 ```cpp
 #include <WiFi.h>
@@ -60,7 +60,7 @@ include alle nodige libraries:
 Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 ```
 
-globale variabelen voor de Ultrasone sensor
+Globale variabelen voor de Ultrasone sensor.
 
 ```cpp
 #define TRIG_PIN 0 // ESP32 pin GIOP23 connected to Ultrasonic Sensor's TRIG pin
@@ -98,10 +98,10 @@ PubSubClient client(mqtt_server, 1883, wifiClient);
 ```
 
 Aanmaken van variabelen
-- globalClientID: om het unieke clientID later in op te slaan.
-- Status: sensor aan of uit
-- sensor_topic: topic om waar het mac address wordt in verwerkt om later de sensor waren naar door te sturen
-- sensor_topic_status: topic om mac address naar te publishen.
+- GlobalClientID: om het unieke clientID later in op te slaan.
+- Status: sensor aan of uit;
+- Sensor_topic: topic om waar het mac address wordt in verwerkt om later de sensor waren naar door te sturen;
+- Sensor_topic_status: topic om mac address naar te publishen.
 
 ```cpp
 //globale string variable ! niet aanpassen.
@@ -167,7 +167,7 @@ void connect_WIFI_MQTT(){
 
 Callback is waar de Mqtt messages worden ontvangen en verwerkt.
 Deze kijkt of de binnen gekomen waarden een '1' ASCII 49 of een andere waarde is.
-dit zal de variabele status veranderen naar TRUE/FALSE.
+Dit zal de variabele status veranderen naar TRUE/FALSE.
 
 ```cpp
 // ********* callback 
@@ -221,9 +221,9 @@ void connections(){
 }
 ```
 
-reconnect functie voor de verbinding te herstellen met de MQTT broker.
+Reconnect functie voor de verbinding te herstellen met de MQTT broker.
 Deze functie heeft de globaleClientID nodig om de verbinding te herstellen.
-Als het reconnecten succesvol was her subscribed hij op de topics.
+Als het reconnecten succesvol was, her subscribed hij op de topics.
 In de tegengestelde scenario print het de state van de client uit en probeert hij na 5 seconden opnieuw.
 
 ```cpp
@@ -249,7 +249,7 @@ void reconnect_MQTT() {
 }
 ```
 
-Functie probeert de verbinding opnieuw op te stellen met de WIFI elke seconde.
+Functie dat probeert de verbinding opnieuw op te stellen met de WIFI elke seconde.
 
 ```cpp
 void reconnect_WIFI(){
@@ -265,14 +265,14 @@ void reconnect_WIFI(){
 }
 ```
 
-de setup functie wordt éénmalig uitgevoert als de esp opgestart wordt:
-- de led activeren , de brightness aanpassen en standaard op rood zetten.
-- zal seriele communicatie met een baudrate van 9600 initializeren
-- de pinnen van de Ultrasone sensor input en output definiëren
-- verbinding maken WIFI en MQTT broker
-- de MQTT loop aanmaken aan de hand van de callback functie
-- Zijn MAC address publishen naar test/devices
-- subscriben op test/{MAC}/status
+De setup functie wordt éénmalig uitgevoert als de esp opgestart wordt:
+- De led activeren , de brightness aanpassen en standaard op rood zetten.
+- Zal seriele communicatie met een baudrate van 9600 initializeren.
+- De pinnen van de Ultrasone sensor input en output definiëren.
+- Verbinding maken WIFI en MQTT broker.
+- De MQTT loop aanmaken aan de hand van de callback functie.
+- Zijn MAC address publishen naar test/devices.
+- Subscriben op test/{MAC}/status.
 
 ```cpp
 void setup() {
@@ -302,7 +302,7 @@ void setup() {
 
 The loop check eerst of the WIFI & MQTT nog in orde zijn.
 Daarna als de status true is zal hij waarden meten via de ultrasone en door sturen naar de sensor_topic.
-Deze blijft draaien tot dde esp wordt uitgetrokken of de code er langer overdoet dan 15 seconde om aan client.loop() te geraken.
+Deze blijft draaien tot de esp wordt uitgetrokken of de code er langer overdoet dan 15 seconden om aan client.loop() te geraken.
 client.loop() moet elke keer aangeroepen worden of de esp wordt automatisch van de broker gedisconnect.
 
 ```cpp
