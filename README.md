@@ -5,6 +5,7 @@ We are using the model: ESP32-C3-DevKitM-1
 made by:
 - [<img src="https://github.com/TristanDeLil.png" width="25">Tristan De Lil](https://github.com/TristanDeLil)
 - [<img src="https://github.com/r0755466.png" width="25">Rayan Azzi](https://github.com/r0755466)
+- [<img src="https://github.com/aaronD14.png" width="25">Aaron Delplancq](https://github.com/aaronD14)
 
 ## importent note
 This was all programmed on the Arduino IDE version 1.
@@ -337,3 +338,19 @@ void loop() {
 client.loop();
 }
 ```
+
+## PCB
+
+<table>
+  <tr>
+    <td>Schematic</td>
+     <td>KICAD schematic</td>
+     <td>KICAD PCB editor</td>
+  </tr>
+  <tr>
+    <td><img src="https://user-images.githubusercontent.com/71698092/209342793-e7d6afee-f2bd-4c9f-a332-e23ef9c96636.png" width="300" height="350"></td>
+    <td><img src="https://user-images.githubusercontent.com/71698092/209343866-022a32b0-8deb-48b5-8e29-e62e0acbca16.jpg" width="300" height="350"></td>
+    <td><img src="https://user-images.githubusercontent.com/71698092/209344002-be443e50-0a6f-45fd-8db9-eca0af2c7371.jpg" width="300" height="350"></td>
+  </tr>
+</table>
+
