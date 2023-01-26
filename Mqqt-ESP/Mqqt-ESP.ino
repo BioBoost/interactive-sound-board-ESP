@@ -169,9 +169,9 @@ void setup() {
 
   connect_to_wifi();
   connect_to_mqtt_broker();
-  publish_hello_package();
-
   setup_mqtt_subscriptions();
+
+  publish_hello_package();
 }
 
 void loop() {
