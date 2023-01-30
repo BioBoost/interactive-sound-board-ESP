@@ -4,6 +4,12 @@ Ultrasonic measurement device that can be controlled via MQTT.
 
 Make sure to copy the `config.example.h` file as `config.h` and provide the needed configuration.
 
+## Project Repos
+
+* [Sonic Sequencer](https://github.com/BioBoost/sonic-sequencer)
+* [Sonic ESP Module Firmware](https://github.com/BioBoost/sonic-esp-module)
+* [Sonic Visuals](https://github.com/BioBoost/sonic-visuals)
+
 ## How to
 
 When device starts it will publish a message to `sonic/modules/hello` with some device information in JSON format. Example:
